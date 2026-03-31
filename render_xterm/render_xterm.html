@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <title>xterm.js + Emscripten</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <style>
+      body { margin: 0; background: #1e1e1e; display: flex; flex-direction: column; height: 100vh; }
+      #terminal { flex: 1; padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="terminal"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script>
+      var term = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'monospace',
+        fontSize: 14,
+        theme: { background: '#1e1e1e' }
+      });
+      term.open(document.getElementById('terminal'));
+
+      // Buffer for keyboard input passed to C via Module.stdin
+      var inputBuffer = [];
+      term.onData(function(data) {
+        for (var i = 0; i < data.length; i++) {
+          inputBuffer.push(data.charCodeAt(i));
+        }
+        // Echo input back to terminal
+        term.write(data === '\r' ? '\r\n' : data);
+      });
+
+      var Module = {
+        // Route C stdout -> xterm
+        print: function(text) { term.write(text + '\r\n'); },
+        printErr: function(text) { term.write('\x1b[31m' + text + '\x1b[0m\r\n'); },
+
+        // Route keyboard input from xterm -> C stdin
+        preRun: [function() {
+          FS.init(function() {
+            return inputBuffer.length > 0 ? inputBuffer.shift() : null;
+          });
+        }]
+      };
+    </script>
+    <script async type="text/javascript" src="render_xterm.js"></script>
+  </body>
+</html>
