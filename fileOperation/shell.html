@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <title>File Operation Demo</title>
+    <style>
+      body { font-family: monospace; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
+      button {
+        margin: 5px; padding: 8px 16px;
+        background: #3a3a3a; color: #d4d4d4;
+        border: 1px solid #555; cursor: pointer;
+        font-family: monospace; font-size: 14px;
+      }
+      button:hover { background: #555; }
+      #output {
+        margin-top: 15px;
+        padding: 10px;
+        border: 1px solid #555;
+        min-height: 100px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <button onclick="readFile()">Read File</button>
+    <button onclick="saveFile()">Save File</button>
+    <div id="output"></div>
+
+    <script>
+      var Module = {
+        print: function(text) {
+          var el = document.getElementById('output');
+          el.textContent += text + '\n';
+        },
+        printErr: function(text) {
+          console.error(text);
+        }
+      };
+
+      function readFile() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = function() {
+          var file = input.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var content = e.target.result;
+            var ptr = Module.ccall('process_file_content', null, ['string'], [content]);
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      }
+
+      function saveFile() {
+        var content = Module.ccall('get_content', 'string', [], []);
+        if (!content) { alert('Nothing to save — read a file first.'); return; }
+        var blob = new Blob([content], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'output.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>
